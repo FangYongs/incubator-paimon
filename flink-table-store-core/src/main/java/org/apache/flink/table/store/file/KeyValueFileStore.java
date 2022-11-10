@@ -24,6 +24,7 @@ import org.apache.flink.table.store.file.mergetree.compact.MergeFunction;
 import org.apache.flink.table.store.file.operation.KeyValueFileStoreRead;
 import org.apache.flink.table.store.file.operation.KeyValueFileStoreScan;
 import org.apache.flink.table.store.file.operation.KeyValueFileStoreWrite;
+import org.apache.flink.table.store.file.schema.RowTypeExtractor;
 import org.apache.flink.table.store.file.schema.SchemaManager;
 import org.apache.flink.table.store.file.utils.KeyComparatorSupplier;
 import org.apache.flink.table.types.logical.RowType;
@@ -37,7 +38,9 @@ public class KeyValueFileStore extends AbstractFileStore<KeyValue> {
     private static final long serialVersionUID = 1L;
 
     private final RowType bucketKeyType;
+    private final RowTypeExtractor keyTypeExtractor;
     private final RowType keyType;
+    private final RowTypeExtractor valueTypeExtractor;
     private final RowType valueType;
     private final Supplier<Comparator<RowData>> keyComparatorSupplier;
     private final MergeFunction<KeyValue> mergeFunction;
@@ -48,12 +51,16 @@ public class KeyValueFileStore extends AbstractFileStore<KeyValue> {
             CoreOptions options,
             RowType partitionType,
             RowType bucketKeyType,
+            RowTypeExtractor keyTypeExtractor,
             RowType keyType,
+            RowTypeExtractor valueTypeExtractor,
             RowType valueType,
             MergeFunction<KeyValue> mergeFunction) {
         super(schemaManager, schemaId, options, partitionType);
         this.bucketKeyType = bucketKeyType;
+        this.keyTypeExtractor = keyTypeExtractor;
         this.keyType = keyType;
+        this.valueTypeExtractor = valueTypeExtractor;
         this.valueType = valueType;
         this.mergeFunction = mergeFunction;
         this.keyComparatorSupplier = new KeyComparatorSupplier(keyType);
@@ -71,6 +78,8 @@ public class KeyValueFileStore extends AbstractFileStore<KeyValue> {
                 schemaId,
                 keyType,
                 valueType,
+                keyTypeExtractor,
+                valueTypeExtractor,
                 newKeyComparator(),
                 mergeFunction,
                 options.fileFormat(),

@@ -23,6 +23,7 @@ import org.apache.flink.table.store.CoreOptions;
 import org.apache.flink.table.store.file.operation.AppendOnlyFileStoreRead;
 import org.apache.flink.table.store.file.operation.AppendOnlyFileStoreScan;
 import org.apache.flink.table.store.file.operation.AppendOnlyFileStoreWrite;
+import org.apache.flink.table.store.file.schema.RowTypeExtractor;
 import org.apache.flink.table.store.file.schema.SchemaManager;
 import org.apache.flink.table.types.logical.RowType;
 
@@ -33,6 +34,7 @@ public class AppendOnlyFileStore extends AbstractFileStore<RowData> {
 
     private final RowType bucketKeyType;
     private final RowType rowType;
+    private final RowTypeExtractor rowTypeExtractor;
 
     public AppendOnlyFileStore(
             SchemaManager schemaManager,
@@ -40,10 +42,12 @@ public class AppendOnlyFileStore extends AbstractFileStore<RowData> {
             CoreOptions options,
             RowType partitionType,
             RowType bucketKeyType,
-            RowType rowType) {
+            RowType rowType,
+            RowTypeExtractor rowTypeExtractor) {
         super(schemaManager, schemaId, options, partitionType);
         this.bucketKeyType = bucketKeyType;
         this.rowType = rowType;
+        this.rowTypeExtractor = rowTypeExtractor;
     }
 
     @Override
@@ -54,7 +58,12 @@ public class AppendOnlyFileStore extends AbstractFileStore<RowData> {
     @Override
     public AppendOnlyFileStoreRead newRead() {
         return new AppendOnlyFileStoreRead(
-                schemaManager, schemaId, rowType, options.fileFormat(), pathFactory());
+                schemaManager,
+                schemaId,
+                rowType,
+                rowTypeExtractor,
+                options.fileFormat(),
+                pathFactory());
     }
 
     @Override

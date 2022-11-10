@@ -24,7 +24,9 @@ import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.data.binary.BinaryRowData;
 import org.apache.flink.table.store.file.KeyValue;
 import org.apache.flink.table.store.file.predicate.Predicate;
+import org.apache.flink.table.store.file.schema.RowTypeExtractor;
 import org.apache.flink.table.store.file.schema.SchemaManager;
+import org.apache.flink.table.store.file.schema.TableSchema;
 import org.apache.flink.table.store.file.utils.FileStorePathFactory;
 import org.apache.flink.table.store.file.utils.RecordReader;
 import org.apache.flink.table.store.format.FileFormat;
@@ -35,7 +37,9 @@ import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /** Factory to create {@link RecordReader}s for reading {@link KeyValue} files. */
 public class KeyValueFileReaderFactory {
@@ -45,8 +49,8 @@ public class KeyValueFileReaderFactory {
     private final RowType keyType;
     private final RowType valueType;
 
-    // TODO introduce Map<SchemaId, readerFactory>
-    private final BulkFormat<RowData, FileSourceSplit> readerFactory;
+    private final BulkFormatFactory bulkFormatFactory;
+    private final Map<Long, BulkFormat<RowData, FileSourceSplit>> schemaReaderFactories;
     private final DataFilePathFactory pathFactory;
 
     private KeyValueFileReaderFactory(
@@ -54,18 +58,26 @@ public class KeyValueFileReaderFactory {
             long schemaId,
             RowType keyType,
             RowType valueType,
-            BulkFormat<RowData, FileSourceSplit> readerFactory,
+            BulkFormatFactory bulkFormatFactory,
             DataFilePathFactory pathFactory) {
         this.schemaManager = schemaManager;
         this.schemaId = schemaId;
         this.keyType = keyType;
         this.valueType = valueType;
-        this.readerFactory = readerFactory;
+        this.bulkFormatFactory = bulkFormatFactory;
+        this.schemaReaderFactories = new HashMap<>();
         this.pathFactory = pathFactory;
     }
 
-    public RecordReader<KeyValue> createRecordReader(String fileName, int level)
+    public RecordReader<KeyValue> createRecordReader(long schemaId, String fileName, int level)
             throws IOException {
+        BulkFormat<RowData, FileSourceSplit> readerFactory =
+                schemaReaderFactories.computeIfAbsent(
+                        schemaId,
+                        key -> {
+                            TableSchema schema = schemaManager.schema(schemaId);
+                            return bulkFormatFactory.createBulkFormat(schema);
+                        });
         return new KeyValueDataFileRecordReader(
                 readerFactory, pathFactory.toPath(fileName), keyType, valueType, level);
     }
@@ -77,7 +89,35 @@ public class KeyValueFileReaderFactory {
             RowType valueType,
             FileFormat fileFormat,
             FileStorePathFactory pathFactory) {
-        return new Builder(schemaManager, schemaId, keyType, valueType, fileFormat, pathFactory);
+        return builder(
+                schemaManager,
+                schemaId,
+                keyType,
+                valueType,
+                schema -> keyType,
+                schema -> valueType,
+                fileFormat,
+                pathFactory);
+    }
+
+    public static Builder builder(
+            SchemaManager schemaManager,
+            long schemaId,
+            RowType keyType,
+            RowType valueType,
+            RowTypeExtractor keyTypeExtractor,
+            RowTypeExtractor valueTypeExtractor,
+            FileFormat fileFormat,
+            FileStorePathFactory pathFactory) {
+        return new Builder(
+                schemaManager,
+                schemaId,
+                keyType,
+                valueType,
+                keyTypeExtractor,
+                valueTypeExtractor,
+                fileFormat,
+                pathFactory);
     }
 
     /** Builder for {@link KeyValueFileReaderFactory}. */
@@ -87,6 +127,8 @@ public class KeyValueFileReaderFactory {
         private final long schemaId;
         private final RowType keyType;
         private final RowType valueType;
+        private final RowTypeExtractor keyTypeExtractor;
+        private final RowTypeExtractor valueTypeExtractor;
         private final FileFormat fileFormat;
         private final FileStorePathFactory pathFactory;
 
@@ -101,12 +143,16 @@ public class KeyValueFileReaderFactory {
                 long schemaId,
                 RowType keyType,
                 RowType valueType,
+                RowTypeExtractor keyTypeExtractor,
+                RowTypeExtractor valueTypeExtractor,
                 FileFormat fileFormat,
                 FileStorePathFactory pathFactory) {
             this.schemaManager = schemaManager;
             this.schemaId = schemaId;
             this.keyType = keyType;
             this.valueType = valueType;
+            this.keyTypeExtractor = keyTypeExtractor;
+            this.valueTypeExtractor = valueTypeExtractor;
             this.fileFormat = fileFormat;
             this.pathFactory = pathFactory;
 
@@ -137,24 +183,70 @@ public class KeyValueFileReaderFactory {
                 int bucket,
                 boolean projectKeys,
                 @Nullable List<Predicate> filters) {
-            int[][] keyProjection = projectKeys ? this.keyProjection : fullKeyProjection;
             RowType projectedKeyType = projectKeys ? this.projectedKeyType : keyType;
-
-            RowType recordType = KeyValue.schema(keyType, valueType);
-            int[][] projection =
-                    KeyValue.project(keyProjection, valueProjection, keyType.getFieldCount());
             return new KeyValueFileReaderFactory(
                     schemaManager,
                     schemaId,
                     projectedKeyType,
                     projectedValueType,
-                    fileFormat.createReaderFactory(recordType, projection, filters),
+                    new BulkFormatFactory(
+                            fileFormat,
+                            projectKeys,
+                            this.keyProjection,
+                            valueProjection,
+                            filters,
+                            keyTypeExtractor,
+                            valueTypeExtractor),
                     pathFactory.createDataFilePathFactory(partition, bucket));
         }
 
         private void applyProjection() {
             projectedKeyType = (RowType) Projection.of(keyProjection).project(keyType);
             projectedValueType = (RowType) Projection.of(valueProjection).project(valueType);
+        }
+    }
+
+    /** Factory for {@link BulkFormat}. */
+    public static class BulkFormatFactory {
+        private final FileFormat fileFormat;
+        private final boolean projectKeys;
+        private final int[][] keyProjection;
+        private final int[][] valueProjection;
+        private final List<Predicate> filters;
+
+        private final RowTypeExtractor keyTypeExtractor;
+        private final RowTypeExtractor valueTypeExtractor;
+
+        public BulkFormatFactory(
+                FileFormat fileFormat,
+                boolean projectKeys,
+                int[][] keyProjection,
+                int[][] valueProjection,
+                List<Predicate> filters,
+                RowTypeExtractor keyTypeExtractor,
+                RowTypeExtractor valueTypeExtractor) {
+            this.fileFormat = fileFormat;
+            this.projectKeys = projectKeys;
+            this.keyProjection = keyProjection;
+            this.valueProjection = valueProjection;
+            this.filters = filters;
+            this.keyTypeExtractor = keyTypeExtractor;
+            this.valueTypeExtractor = valueTypeExtractor;
+        }
+
+        public BulkFormat<RowData, FileSourceSplit> createBulkFormat(TableSchema schema) {
+            RowType keyType = keyTypeExtractor.extract(schema);
+            RowType valueType = valueTypeExtractor.extract(schema);
+
+            final int[][] fullKeyProjection =
+                    Projection.range(0, keyType.getFieldCount()).toNestedIndexes();
+            int[][] keyProjection = projectKeys ? this.keyProjection : fullKeyProjection;
+
+            RowType recordType = KeyValue.schema(keyType, valueType);
+            int[][] projection =
+                    KeyValue.project(keyProjection, valueProjection, keyType.getFieldCount());
+
+            return fileFormat.createReaderFactory(recordType, projection, filters);
         }
     }
 }

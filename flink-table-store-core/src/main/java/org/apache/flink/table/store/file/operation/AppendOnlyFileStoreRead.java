@@ -26,7 +26,9 @@ import org.apache.flink.table.store.file.io.DataFilePathFactory;
 import org.apache.flink.table.store.file.io.RowDataFileRecordReader;
 import org.apache.flink.table.store.file.mergetree.compact.ConcatRecordReader;
 import org.apache.flink.table.store.file.predicate.Predicate;
+import org.apache.flink.table.store.file.schema.RowTypeExtractor;
 import org.apache.flink.table.store.file.schema.SchemaManager;
+import org.apache.flink.table.store.file.schema.TableSchema;
 import org.apache.flink.table.store.file.utils.FileStorePathFactory;
 import org.apache.flink.table.store.file.utils.RecordReader;
 import org.apache.flink.table.store.format.FileFormat;
@@ -38,7 +40,9 @@ import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.apache.flink.table.store.file.predicate.PredicateBuilder.splitAnd;
 
@@ -48,8 +52,10 @@ public class AppendOnlyFileStoreRead implements FileStoreRead<RowData> {
     private final SchemaManager schemaManager;
     private final long schemaId;
     private final RowType rowType;
+    private final RowTypeExtractor rowTypeExtractor;
     private final FileFormat fileFormat;
     private final FileStorePathFactory pathFactory;
+    private final Map<Long, BulkFormat<RowData, FileSourceSplit>> schemaReaderFactories;
 
     private int[][] projection;
 
@@ -59,13 +65,16 @@ public class AppendOnlyFileStoreRead implements FileStoreRead<RowData> {
             SchemaManager schemaManager,
             long schemaId,
             RowType rowType,
+            RowTypeExtractor rowTypeExtractor,
             FileFormat fileFormat,
             FileStorePathFactory pathFactory) {
         this.schemaManager = schemaManager;
         this.schemaId = schemaId;
         this.rowType = rowType;
+        this.rowTypeExtractor = rowTypeExtractor;
         this.fileFormat = fileFormat;
         this.pathFactory = pathFactory;
+        this.schemaReaderFactories = new HashMap<>();
 
         this.projection = Projection.range(0, rowType.getFieldCount()).toNestedIndexes();
     }
@@ -83,12 +92,18 @@ public class AppendOnlyFileStoreRead implements FileStoreRead<RowData> {
 
     @Override
     public RecordReader<RowData> createReader(DataSplit split) throws IOException {
-        BulkFormat<RowData, FileSourceSplit> readerFactory =
-                fileFormat.createReaderFactory(rowType, projection, filters);
         DataFilePathFactory dataFilePathFactory =
                 pathFactory.createDataFilePathFactory(split.partition(), split.bucket());
         List<ConcatRecordReader.ReaderSupplier<RowData>> suppliers = new ArrayList<>();
         for (DataFileMeta file : split.files()) {
+            BulkFormat<RowData, FileSourceSplit> readerFactory =
+                    schemaReaderFactories.computeIfAbsent(
+                            file.schemaId(),
+                            id -> {
+                                TableSchema schema = schemaManager.schema(id);
+                                RowType rowType = rowTypeExtractor.extract(schema);
+                                return fileFormat.createReaderFactory(rowType, projection, filters);
+                            });
             suppliers.add(
                     () ->
                             new RowDataFileRecordReader(
