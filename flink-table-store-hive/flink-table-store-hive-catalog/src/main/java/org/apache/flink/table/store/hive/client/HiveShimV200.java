@@ -23,6 +23,7 @@ import org.apache.flink.table.catalog.exceptions.CatalogException;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.store.hive.TableStoreHiveException;
 import org.apache.flink.table.types.logical.LogicalType;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -33,7 +34,6 @@ import org.apache.hadoop.hive.ql.metadata.Hive;
 
 import java.lang.reflect.Method;
 import java.util.Map;
-import java.util.Properties;
 
 /** Shim for Hive version 2.0.0. */
 public class HiveShimV200 extends HiveShimV122 {

@@ -27,6 +27,7 @@ import org.apache.flink.table.store.hive.TableStoreHiveException;
 import org.apache.flink.table.store.hive.util.HiveReflectionUtils;
 import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.util.Preconditions;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.type.HiveChar;
@@ -73,6 +74,7 @@ import org.apache.hadoop.mapred.Reporter;
 import org.apache.thrift.TException;
 
 import javax.annotation.Nonnull;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

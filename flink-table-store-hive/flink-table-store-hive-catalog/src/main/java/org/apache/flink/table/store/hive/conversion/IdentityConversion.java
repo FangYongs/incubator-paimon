@@ -18,8 +18,6 @@
 
 package org.apache.flink.table.store.hive.conversion;
 
-import org.apache.flink.annotation.Internal;
-
 /** Conversion that return the same object. */
 public class IdentityConversion implements HiveObjectConversion {
 

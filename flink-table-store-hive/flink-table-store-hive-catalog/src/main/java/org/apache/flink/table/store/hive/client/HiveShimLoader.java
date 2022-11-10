@@ -19,6 +19,7 @@
 package org.apache.flink.table.store.hive.client;
 
 import org.apache.flink.table.catalog.exceptions.CatalogException;
+
 import org.apache.hive.common.util.HiveVersionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

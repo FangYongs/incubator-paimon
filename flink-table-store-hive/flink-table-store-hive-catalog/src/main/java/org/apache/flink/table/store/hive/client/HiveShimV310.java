@@ -24,6 +24,7 @@ import org.apache.flink.table.store.hive.TableStoreHiveException;
 import org.apache.flink.table.store.hive.util.HiveReflectionUtils;
 import org.apache.flink.table.store.hive.util.HiveTableUtil;
 import org.apache.flink.util.Preconditions;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -121,7 +122,8 @@ public class HiveShimV310 extends HiveShimV239 {
                                 Class.forName(
                                         "org.apache.hadoop.hive.ql.plan.LoadTableDesc$LoadFileType");
                     } catch (ClassNotFoundException e) {
-                        throw new TableStoreHiveException("Failed to get Hive LoadFileType class", e);
+                        throw new TableStoreHiveException(
+                                "Failed to get Hive LoadFileType class", e);
                     }
                     loadFileClassInited = true;
                 }

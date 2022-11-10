@@ -19,6 +19,7 @@
 package org.apache.flink.table.store.hive.client;
 
 import org.apache.flink.util.Preconditions;
+
 import org.apache.hadoop.hive.conf.HiveConf;
 
 /** Factory to create Hive metastore client. */

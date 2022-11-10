@@ -23,6 +23,7 @@ import org.apache.flink.table.api.constraints.UniqueConstraint;
 import org.apache.flink.table.catalog.stats.CatalogColumnStatisticsDataDate;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.logical.LogicalType;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -47,6 +48,7 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.thrift.TException;
 
 import javax.annotation.Nullable;
+
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;

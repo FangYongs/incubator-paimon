@@ -21,6 +21,7 @@ package org.apache.flink.table.store.hive.client;
 import org.apache.flink.table.catalog.exceptions.CatalogException;
 import org.apache.flink.table.store.hive.TableStoreHiveException;
 import org.apache.flink.util.Preconditions;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
