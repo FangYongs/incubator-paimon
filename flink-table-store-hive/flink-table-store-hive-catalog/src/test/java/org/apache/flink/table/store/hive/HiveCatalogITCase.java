@@ -18,7 +18,6 @@
 
 package org.apache.flink.table.store.hive;
 
-import org.apache.flink.connectors.hive.FlinkEmbeddedHiveRunner;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.TableEnvironment;
@@ -55,7 +54,7 @@ import static org.apache.hadoop.hive.conf.HiveConf.ConfVars.HIVE_TXN_MANAGER;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 /** IT cases for {@link HiveCatalog}. */
-@RunWith(FlinkEmbeddedHiveRunner.class)
+@RunWith(TableStoreEmbeddedHiveRunner.class)
 public class HiveCatalogITCase {
 
     @Rule public TemporaryFolder folder = new TemporaryFolder();

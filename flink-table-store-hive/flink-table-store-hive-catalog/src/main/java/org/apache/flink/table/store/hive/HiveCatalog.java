@@ -51,15 +51,19 @@ import org.apache.thrift.TException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.apache.flink.table.factories.FactoryUtil.CONNECTOR;
 import static org.apache.flink.table.store.CatalogOptions.LOCK_ENABLED;
 import static org.apache.flink.table.store.hive.HiveCatalogLock.acquireTimeout;
 import static org.apache.flink.table.store.hive.HiveCatalogLock.checkMaxSleep;
 
 /** A catalog implementation for Hive. */
 public class HiveCatalog extends AbstractCatalog {
+
+    public static final String IDENTIFIER = "hive";
 
     // we don't include flink-table-store-hive-connector as dependencies because it depends on
     // hive-exec
@@ -392,5 +396,9 @@ public class HiveCatalog extends AbstractCatalog {
                         hiveConf.get(HiveConf.ConfVars.METASTOREURIS.varname))
                 ? client
                 : HiveMetaStoreClient.newSynchronizedClient(client);
+    }
+
+    public static boolean isHiveTable(Map<String, String> properties) {
+        return IDENTIFIER.equalsIgnoreCase(properties.get(CONNECTOR.key()));
     }
 }
