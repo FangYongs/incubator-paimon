@@ -99,7 +99,9 @@ public class TestFileStore extends KeyValueFileStore {
                 options,
                 partitionType,
                 keyType,
+                schema -> keyType,
                 keyType,
+                schema -> valueType,
                 valueType,
                 mergeFunction);
         this.root = root;

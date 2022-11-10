@@ -108,7 +108,9 @@ public class ChangelogWithKeyFileStoreTable extends AbstractFileStoreTable {
                         options,
                         tableSchema.logicalPartitionType(),
                         addKeyNamePrefix(tableSchema.logicalBucketKeyType()),
+                        schema -> addKeyNamePrefix(schema.logicalTrimmedPrimaryKeysType()),
                         addKeyNamePrefix(tableSchema.logicalTrimmedPrimaryKeysType()),
+                        TableSchema::logicalRowType,
                         rowType,
                         mergeFunction);
     }

@@ -107,6 +107,8 @@ public class TestChangelogDataReadWrite {
                         0,
                         KEY_TYPE,
                         VALUE_TYPE,
+                        schema -> KEY_TYPE,
+                        schema -> VALUE_TYPE,
                         COMPARATOR,
                         new DeduplicateMergeFunction(),
                         avro,
