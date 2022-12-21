@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Optional;
@@ -198,12 +199,24 @@ public class SnapshotManager {
         Path snapshotDir = snapshotDirectory();
         Path path = new Path(snapshotDir, fileName);
         try {
-            if (path.getFileSystem().exists(path)) {
-                return Long.parseLong(FileUtils.readFileUtf8(path));
+            return readLongFromFile(path);
+        } catch (FileNotFoundException fe) {
+            try {
+                return readLongFromFile(path);
+            } catch (Exception e) {
+                LOG.info(
+                        "Failed to read hint file " + fileName + " after retry. Falling back to listing files.", e);
             }
         } catch (Exception e) {
             LOG.info(
                     "Failed to read hint file " + fileName + ". Falling back to listing files.", e);
+        }
+        return null;
+    }
+
+    private Long readLongFromFile(Path path) throws IOException {
+        if (path.getFileSystem().exists(path)) {
+            return Long.parseLong(FileUtils.readFileUtf8(path));
         }
         return null;
     }
