@@ -8,27 +8,18 @@ import java.util.Map;
 
 public interface MetadataStore {
 	/**
-	 * Store the options for the catalog.
-	 *
-	 * @param catalog the catalog
-	 * @param options the catalog options
-	 */
-	void storeCatalogOptions(String catalog, Map<String, String> options);
-
-	/**
-	 * Get the options for the catalog.
-	 *
-	 * @param catalog the catalog name
-	 * @return the catalog options
-	 */
-	Map<String, String> getCatalogOptions(String catalog);
-
-	/**
 	 * Store the source table and job lineage.
 	 *
 	 * @param entity the table lineage entity
 	 */
 	void storeSourceTableLineage(TableLineageEntity entity);
+
+	/**
+	 * Delete the source table lineage for given job.
+	 *
+	 * @param job the job for table lineage
+	 */
+	void deleteSourceTableLineage(String job);
 
 	/**
 	 * Get source table and job lineages.
@@ -44,6 +35,13 @@ public interface MetadataStore {
 	 * @param entity the table lineage entity
 	 */
 	void storeSinkTableLineage(TableLineageEntity entity);
+
+	/**
+	 * Delete the sink table lineage for given job.
+	 *
+	 * @param job the job for table lineage
+	 */
+	void deleteSinkTableLineage(String job);
 
 	/**
 	 * Get sink table and job lineages.

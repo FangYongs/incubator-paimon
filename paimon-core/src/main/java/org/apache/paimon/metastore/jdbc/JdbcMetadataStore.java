@@ -18,17 +18,12 @@ public class JdbcMetadataStore implements MetadataStore {
 	}
 
 	@Override
-	public void storeCatalogOptions(String catalog, Map<String, String> options) {
-
-	}
-
-	@Override
-	public Map<String, String> getCatalogOptions(String catalog) {
-		return null;
-	}
-
-	@Override
 	public void storeSourceTableLineage(TableLineageEntity entity) {
+
+	}
+
+	@Override
+	public void deleteSourceTableLineage(String job) {
 
 	}
 
@@ -39,6 +34,11 @@ public class JdbcMetadataStore implements MetadataStore {
 
 	@Override
 	public void storeSinkTableLineage(TableLineageEntity entity) {
+
+	}
+
+	@Override
+	public void deleteSinkTableLineage(String job) {
 
 	}
 
