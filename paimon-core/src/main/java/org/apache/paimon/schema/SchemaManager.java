@@ -441,8 +441,7 @@ public class SchemaManager implements Serializable {
         updateNestedColumn(newFields, new String[] {updateFieldName}, 0, updateFunc);
     }
 
-    @VisibleForTesting
-    boolean commit(TableSchema newSchema) throws Exception {
+    public boolean commit(TableSchema newSchema) throws Exception {
         SchemaValidation.validateTableSchema(newSchema);
 
         Path schemaPath = toSchemaPath(newSchema.id());
